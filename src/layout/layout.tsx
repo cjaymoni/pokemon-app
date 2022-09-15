@@ -5,11 +5,13 @@ import Header from "../components/header";
 function AppLayout() {
   return (
     <Fragment>
-      <div>
-        <Header />
-      </div>
-      <div>
-        <Outlet></Outlet>
+      <div className="min-h-screen">
+        {/* <div>
+          <Header />
+        </div> */}
+        <section className="w-full min-h-screen">
+          <Outlet></Outlet>
+        </section>
       </div>
     </Fragment>
   );
