@@ -5,7 +5,7 @@ const url = import.meta.env.VITE_API_URL;
 const api = axios.create({
   baseURL: url,
   //   baseURL: "https://pokeapi.co/api/v2",
-  timeout: 1000,
+  timeout: 5000,
 });
 
 api.defaults.headers.get["Accept"] = "application/json";

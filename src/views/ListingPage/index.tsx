@@ -1,312 +1,142 @@
-import React, { useEffect } from "react";
-import api from "../../utils/api";
+import React from "react";
+import Pagination from "../../components/paginator";
+import CardComponent from "../../components/card";
+import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/20/solid";
+import { withPokemon } from "../../context/PokemonContext";
+import { IPokemonData } from "../../interfaces/all-models";
 
-export default function ListingPage() {
-  const [listData, setListData] = React.useState<any>([]);
-  const fetchListing = async () => {
-    const response = await api
-      .get("/pokemon")
-      .then(function (response) {
-        const res = response.data.results;
-        res.forEach((element: any) => {
-          fetchPokemonData(element);
-        });
-      })
-      .catch(function (error) {
-        // handle error
-        console.log(error);
-      })
-      .then(function () {});
-  };
-  function fetchPokemonData(pokemon: any) {
-    let url = pokemon.url; // <--- this is saving the pokemon url to a variable to use in the fetch.
-    //Example: https://pokeapi.co/api/v2/pokemon/1/"
-    api.get(url).then((res: any) => {
-      setListData((listData: any) => [...listData, res.data]);
+class ListingPage extends React.Component<any, any> {
+  constructor(props: any) {
+    super(props);
+    this.state = {
+      pokemonData: [],
+      searchTerm: "",
+      listData: [],
+      currentPage: 1,
+      recordsPerPage: 16,
+      totalRecords: 0,
+    };
+  }
+  componentDidMount(): void {
+    this.props.fetchListing();
+    this.setState({
+      pokemonData: this.props.pokemonData,
+      listData: this.props.pokemonData,
+      totalRecords: this.props.pokemonData.length,
     });
   }
 
-  useEffect(() => {
-    fetchListing();
-  }, []);
-  console.log(listData);
+  componentDidUpdate(
+    prevProps: Readonly<any>,
+    prevState: Readonly<any>,
+    snapshot?: any
+  ): void {
+    if (prevProps.pokemonData !== this.props.pokemonData) {
+      this.setState({
+        pokemonData: this.props.pokemonData,
+        listData: this.props.pokemonData,
+        totalRecords: this.props.pokemonData.length,
+      });
+    }
+  }
 
-  return (
-    <div className="text-gray-600 body-font min-h-screen">
-      <div className="container px-5 py-24 mx-auto">
-        <div className="flex flex-wrap -m-4">
-          {listData.map((item: any) => (
-            <div className="p-4 md:w-1/4 ">
-              <div className="h-full border-2 border-gray-200 border-opacity-60 rounded-lg overflow-hidden shadow-2xl">
-                <img
-                  className="lg:h-48 md:h-36 w-full object-cover object-center"
-                  src={item.sprites?.front_default}
-                  alt="blog"
+  handleChange = (event: any, data: IPokemonData[]) => {
+    this.setState({ searchTerm: event.target.value });
+    if (this.state.searchTerm.length > 3) {
+      const filterd = data.filter((item: any) => {
+        return item.name
+          .toLowerCase()
+          .includes(this.state.searchTerm.toLowerCase());
+      });
+      return this, this.setState({ listData: filterd });
+    }
+  };
+
+  handleKeyDown = (event: any) => {
+    if (event.key === "Backspace" && this.state.searchTerm.length < 4) {
+      this.setState({ searchTerm: "" });
+      this.props.clearPokemonData();
+      this.props.fetchListing();
+    }
+  };
+  resetData = () => {
+    this.setState({ searchTerm: "" });
+    this.props.clearPokemonData();
+    this.props.fetchListing();
+  };
+
+  upDatePage = (page: number) => {
+    this.setState({ currentPage: page });
+  };
+
+  render() {
+    const indexOfLastRecord =
+      this.state.currentPage * this.state.recordsPerPage;
+
+    const indexOfFirstRecord = indexOfLastRecord - this.state.recordsPerPage;
+
+    const currentRecords = this.state.listData.slice(
+      indexOfFirstRecord,
+      indexOfLastRecord
+    );
+
+    const numberOfPages = Math.ceil(
+      this.state.listData.length / this.state.recordsPerPage
+    );
+
+    return (
+      <div className="text-gray-600 body-font min-h-screen">
+        <div>
+          <h1 className="text-3xl text-red-500 text-center pt-10">Pokédex</h1>
+          <p className="text-center mt-6 text-xl text-gray-700">
+            The Pokédex contains detailed stats for every creature from the
+            Pokemon games.
+          </p>
+        </div>
+
+        <div>
+          <form className="pt-2 relative mx-auto text-gray-600 w-1/2 mt-8">
+            <input
+              className="border-2 border-gray-300 bg-white h-12 w-full px-5 pr-16 rounded-lg text-sm focus:outline-none"
+              type="search"
+              name="searchTerm"
+              placeholder="Search for Pokemons"
+              id="searchTerm"
+              value={this.state.searchTerm}
+              onKeyDown={(e) => this.handleKeyDown(e)}
+              onChange={(e) => this.handleChange(e, currentRecords)}
+            />
+            {this.state.searchTerm.length > 3 && (
+              <div className="absolute right-0 top-1 mt-5 mr-10">
+                <XMarkIcon
+                  className="w-4 h-4 cursor-pointer text-cyan-600"
+                  onClick={() => this.resetData()}
                 />
-                <div className="p-6">
-                  <h2 className="tracking-widest text-xs title-font font-medium text-gray-400 mb-1">
-                    {item.name}
-                  </h2>
-                  <h1 className="title-font text-lg font-medium text-gray-900 mb-3">
-                    {item.name}
-                  </h1>
-                  <p className="leading-relaxed mb-3">
-                    Photo booth fam kinfolk cold-pressed sriracha leggings
-                    jianbing microdosing tousled waistcoat.
-                  </p>
-                  <div className="flex items-center flex-wrap ">
-                    <a className="text-indigo-500 inline-flex items-center md:mb-2 lg:mb-0">
-                      Learn More
-                      <svg
-                        className="w-4 h-4 ml-2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        fill="none"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path d="M5 12h14"></path>
-                        <path d="M12 5l7 7-7 7"></path>
-                      </svg>
-                    </a>
-                    <span className="text-gray-400 mr-3 inline-flex items-center lg:ml-auto md:ml-0 ml-auto leading-none text-sm pr-3 py-1 border-r-2 border-gray-200">
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        fill="none"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                      </svg>
-                      1.2K
-                    </span>
-                    <span className="text-gray-400 inline-flex items-center leading-none text-sm">
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        fill="none"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"></path>
-                      </svg>
-                      6
-                    </span>
-                  </div>
-                </div>
               </div>
-            </div>
-          ))}
-          {/* <div className="p-4 md:w-1/4">
-              <div className="h-full border-2 border-gray-200 border-opacity-60 rounded-lg overflow-hidden shadow-2xl">
-                <img
-                  className="lg:h-48 md:h-36 w-full object-cover object-center"
-                  src="https://dummyimage.com/721x401"
-                  alt="blog"
-                />
-                <div className="p-6">
-                  <h2 className="tracking-widest text-xs title-font font-medium text-gray-400 mb-1">
-                    CATEGORY
-                  </h2>
-                  <h1 className="title-font text-lg font-medium text-gray-900 mb-3">
-                    The 400 Blows
-                  </h1>
-                  <p className="leading-relaxed mb-3">
-                    Photo booth fam kinfolk cold-pressed sriracha leggings
-                    jianbing microdosing tousled waistcoat.
-                  </p>
-                  <div className="flex items-center flex-wrap">
-                    <a className="text-indigo-500 inline-flex items-center md:mb-2 lg:mb-0">
-                      Learn More
-                      <svg
-                        className="w-4 h-4 ml-2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        fill="none"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path d="M5 12h14"></path>
-                        <path d="M12 5l7 7-7 7"></path>
-                      </svg>
-                    </a>
-                    <span className="text-gray-400 mr-3 inline-flex items-center lg:ml-auto md:ml-0 ml-auto leading-none text-sm pr-3 py-1 border-r-2 border-gray-200">
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        fill="none"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                      </svg>
-                      1.2K
-                    </span>
-                    <span className="text-gray-400 inline-flex items-center leading-none text-sm">
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        fill="none"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"></path>
-                      </svg>
-                      6
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="p-4 md:w-1/4 ">
-              <div className="h-full border-2 border-gray-200 border-opacity-60 rounded-lg overflow-hidden shadow-2xl">
-                <img
-                  className="lg:h-48 md:h-36 w-full object-cover object-center"
-                  src="https://dummyimage.com/722x402"
-                  alt="blog"
-                />
-                <div className="p-6">
-                  <h2 className="tracking-widest text-xs title-font font-medium text-gray-400 mb-1">
-                    CATEGORY
-                  </h2>
-                  <h1 className="title-font text-lg font-medium text-gray-900 mb-3">
-                    Shooting Stars
-                  </h1>
-                  <p className="leading-relaxed mb-3">
-                    Photo booth fam kinfolk cold-pressed sriracha leggings
-                    jianbing microdosing tousled waistcoat.
-                  </p>
-                  <div className="flex items-center flex-wrap ">
-                    <a className="text-indigo-500 inline-flex items-center md:mb-2 lg:mb-0">
-                      Learn More
-                      <svg
-                        className="w-4 h-4 ml-2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        fill="none"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path d="M5 12h14"></path>
-                        <path d="M12 5l7 7-7 7"></path>
-                      </svg>
-                    </a>
-                    <span className="text-gray-400 mr-3 inline-flex items-center lg:ml-auto md:ml-0 ml-auto leading-none text-sm pr-3 py-1 border-r-2 border-gray-200">
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        fill="none"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                      </svg>
-                      1.2K
-                    </span>
-                    <span className="text-gray-400 inline-flex items-center leading-none text-sm">
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        fill="none"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"></path>
-                      </svg>
-                      6
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="p-4 md:w-1/4 ">
-              <div className="h-full border-2 border-gray-200 border-opacity-60 rounded-lg overflow-hidden shadow-2xl">
-                <img
-                  className="lg:h-48 md:h-36 w-full object-cover object-center"
-                  src="https://dummyimage.com/722x402"
-                  alt="blog"
-                />
-                <div className="p-6">
-                  <h2 className="tracking-widest text-xs title-font font-medium text-gray-400 mb-1">
-                    CATEGORY
-                  </h2>
-                  <h1 className="title-font text-lg font-medium text-gray-900 mb-3">
-                    Shooting Stars
-                  </h1>
-                  <p className="leading-relaxed mb-3">
-                    Photo booth fam kinfolk cold-pressed sriracha leggings
-                    jianbing microdosing tousled waistcoat.
-                  </p>
-                  <div className="flex items-center flex-wrap ">
-                    <a className="text-indigo-500 inline-flex items-center md:mb-2 lg:mb-0">
-                      Learn More
-                      <svg
-                        className="w-4 h-4 ml-2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        fill="none"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path d="M5 12h14"></path>
-                        <path d="M12 5l7 7-7 7"></path>
-                      </svg>
-                    </a>
-                    <span className="text-gray-400 mr-3 inline-flex items-center lg:ml-auto md:ml-0 ml-auto leading-none text-sm pr-3 py-1 border-r-2 border-gray-200">
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        fill="none"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                      </svg>
-                      1.2K
-                    </span>
-                    <span className="text-gray-400 inline-flex items-center leading-none text-sm">
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        fill="none"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"></path>
-                      </svg>
-                      6
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div> */}
+            )}
+            <button type="submit" className="absolute right-0 top-1 mt-5 mr-4">
+              <MagnifyingGlassIcon className="text-gray-600 h-4 w-4 fill-current" />
+            </button>
+          </form>
+        </div>
+
+        <div className="container px-2 py-24 mx-auto">
+          <div className="p-5 grid grid-cols-1 sm:grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+            {currentRecords.map((item: IPokemonData, index: number) => (
+              <CardComponent key={index} data={item} index={index} />
+            ))}
+          </div>
+          <Pagination
+            nPages={numberOfPages}
+            currentPage={this.state.currentPage}
+            setCurrentPage={this.upDatePage}
+            totalRecords={this.state.totalRecords}
+            recordsPerPage={this.state.recordsPerPage}
+          />
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 }
+
+export default withPokemon(ListingPage);
