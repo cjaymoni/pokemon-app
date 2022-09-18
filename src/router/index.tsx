@@ -11,8 +11,8 @@ function AppRoutes() {
         <Route path="/" element={<AppLayout />}>
           <Route index element={<ListingPage />} />
           <Route path="pokemon/:pokemonName" element={<DetailsPage />} />
-          <Route path="*" element={<NotFound />} />
         </Route>
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );
